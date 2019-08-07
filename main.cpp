@@ -1,15 +1,10 @@
 #include "stm32f4xx.h"
 #include "system_stm32f4xx.h"
-#include "misc.h"
-#include "stm32f4xx_tim.h"
+//#include "misc.h"
+//#include "stm32f4xx_tim.h"
 #include "stm32f4xx_gpio.h"
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_flash.h"
-
-#include <stdio.h>
-#include "FreeRTOS.h"
-#include "FreeRTOSConfig.h"
-#include "task.h"
 
 /*
  *   System Clock Configuration
@@ -34,14 +29,6 @@
  * Do not delete this function It provides
  * The correct System Clock settings
  */
-void system_clock_config();
-
-/*
- * Demo features
- */
-void set_led_pin();
-void run(void *pvParameters);
-
 void system_clock_config()
 {
         /* Enable HSE oscillator */
@@ -73,6 +60,17 @@ void system_clock_config()
         /* Update CMSIS variable */
         SystemCoreClock = 168000000;
 }
+
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+
+/*
+ * Demo features
+ */
+void set_led_pin();
+void run(void *pvParameters);
 
 int main(void) {
 
@@ -115,8 +113,3 @@ void set_led_pin()
         pin13.GPIO_PuPd = GPIO_PuPd_NOPULL;
         GPIO_Init(GPIOD, &pin13);
 }
-
-extern "C"
-{
-}
-
