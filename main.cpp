@@ -6,6 +6,11 @@
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_flash.h"
 
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+
 /*
  *   System Clock Configuration
  *   The system Clock is configured as follow :
@@ -25,25 +30,17 @@
  *   Flash Latency(WS)              = 5
  */
 
+/*
+ * Do not delete this function It provides
+ * The correct System Clock settings
+ */
 void system_clock_config();
+
+/*
+ * Demo features
+ */
 void set_led_pin();
-void set_timer();
-
-int main(void) {
-
-        /* Set described options*/
-        system_clock_config();
-
-        /* Set GPIO for LED*/
-        set_led_pin();
-
-        /* Set TIM6 and internal interrupt for
-         * LED flash */
-        set_timer();
-
-        while (1);
-        return 1;
-}
+void run(void *pvParameters);
 
 void system_clock_config()
 {
@@ -60,8 +57,8 @@ void system_clock_config()
         /* Set APB1 and APB2 clock frequency */
         RCC_PCLK1Config(RCC_HCLK_Div4);
         RCC_PCLK2Config(RCC_HCLK_Div2);
-        /*
-         * Set HSE as source for PLL
+
+         /* Set HSE as source for PLL
          * Set divider (M, N, P, Q)
          * Enable PLL
          */
@@ -69,12 +66,41 @@ void system_clock_config()
         RCC_PLLCmd(ENABLE);
         while (!RCC_GetFlagStatus(RCC_FLAG_PLLRDY));
 
-        /* Sysclk activation on the main PLL */
+        /* SysClk activation on the main PLL */
         RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
         while (!RCC_GetFlagStatus(RCC_FLAG_PLLRDY));
 
         /* Update CMSIS variable */
         SystemCoreClock = 168000000;
+}
+
+int main(void) {
+
+        /* Set described options*/
+        system_clock_config();
+
+        /* Set GPIO for LED*/
+        set_led_pin();
+
+        /* Task create with a "run" function inside */
+        xTaskCreate(run, "run", 64, NULL, 1, NULL);
+
+        /* Start freertos */
+        vTaskStartScheduler();
+
+        return 1;
+}
+
+void run(void *pvParameters)
+{
+        configCPU_CLOCK_HZ;
+        static uint8_t pc = 1;
+        while (1) {
+                GPIO_SetBits(GPIOD, GPIO_Pin_13);
+                vTaskDelay(1000);
+                GPIO_ResetBits(GPIOD, GPIO_Pin_13);
+                vTaskDelay(1000);
+     }
 }
 
 void set_led_pin()
@@ -90,45 +116,7 @@ void set_led_pin()
         GPIO_Init(GPIOD, &pin13);
 }
 
-void set_timer()
-{
-        RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM6, ENABLE);
-
-        /*  Set timer to 1s overflow */
-        TIM_TimeBaseInitTypeDef testTim;
-        TIM_TimeBaseStructInit(&testTim);
-        TIM_TimeBaseStructInit(&testTim);
-        testTim.TIM_Prescaler = 8400 - 1;
-        testTim.TIM_Period = 10000;
-        TIM_TimeBaseInit(TIM6, &testTim);
-
-        /* Enable timer overflow interrupt */
-        TIM_ITConfig(TIM6, TIM_IT_Update, ENABLE);
-
-        /* Enable timer counter */
-        TIM_Cmd(TIM6, ENABLE);
-
-        /* Set interrupt line and source */
-        NVIC_InitTypeDef testNvic;
-        testNvic.NVIC_IRQChannel = TIM6_DAC_IRQn;
-        testNvic.NVIC_IRQChannelPreemptionPriority = 0x01;
-        testNvic.NVIC_IRQChannelSubPriority = 0x01;
-        testNvic.NVIC_IRQChannelCmd = ENABLE;
-        NVIC_Init(&testNvic);
-}
-
-/* Timer interrupt handler */
 extern "C"
 {
-void TIM6_DAC_IRQHandler() {
-        static uint8_t tc = 1;
-        TIM_ClearITPendingBit(TIM6, TIM_IT_Update);
-        if (tc) {
-                GPIO_SetBits(GPIOD, GPIO_Pin_13);
-                tc--;
-        } else {
-                GPIO_ResetBits(GPIOD, GPIO_Pin_13);
-                tc++;
-        }
 }
-}
+
