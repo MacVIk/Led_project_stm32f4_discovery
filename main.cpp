@@ -66,9 +66,7 @@ void system_clock_config()
 #include "FreeRTOSConfig.h"
 #include "task.h"
 
-/*
- * Demo features
- */
+ /* Demo features */
 void set_led_pin();
 void run(void *pvParameters);
 
@@ -91,8 +89,7 @@ int main(void) {
 
 void run(void *pvParameters)
 {
-        configCPU_CLOCK_HZ;
-        static uint8_t pc = 1;
+        /* Infinite circle with a LED flashing */
         while (1) {
                 GPIO_SetBits(GPIOD, GPIO_Pin_13);
                 vTaskDelay(1000);
@@ -103,13 +100,20 @@ void run(void *pvParameters)
 
 void set_led_pin()
 {
+        /* Set port clocking */
         RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
 
+        /* Defalt settings */
         GPIO_InitTypeDef pin13;
         GPIO_StructInit(&pin13);
+
+        /* User settings */
         pin13.GPIO_Mode = GPIO_Mode_OUT;
         pin13.GPIO_Pin = GPIO_Pin_13;
         pin13.GPIO_OType = GPIO_OType_PP;
         pin13.GPIO_PuPd = GPIO_PuPd_NOPULL;
+
+        /* User settings applying */
         GPIO_Init(GPIOD, &pin13);
 }
+
